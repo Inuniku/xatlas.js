@@ -16,12 +16,14 @@ struct MeshBufferInfo {
     uint32_t positionOffset;
     uint32_t normalOffset;
     uint32_t uvOffset;
+    xatlas::IndexFormat indexFormat;
 };
 
 struct UvMeshBufferInfo {
     uint32_t meshId;
     uint32_t indexOffset;
     uint32_t uvOffset;
+    xatlas::IndexFormat indexFormat;
 };
 
 struct AtlasMeshBufferInfo {
@@ -29,14 +31,15 @@ struct AtlasMeshBufferInfo {
     uint32_t newIndexCount;
     uint32_t indexOffset;
     uint32_t originalIndexOffset;
+    uint32_t atlasIndexOffset;
     uint32_t uvOffset;
 };
 
 extern void createAtlas();
 
-extern MeshBufferInfo createMesh(uint32_t vertexCount, uint32_t indexCount, bool normals, bool uvs);
+extern MeshBufferInfo createMesh(uint32_t vertexCount, uint32_t indexCount, bool normals, bool uvs, xatlas::IndexFormat indexFormat);
 
-extern UvMeshBufferInfo createUvMesh(int vertexCount, int indexCount);
+extern UvMeshBufferInfo createUvMesh(int vertexCount, int indexCount, xatlas::IndexFormat indexFormat);
 
 extern uint32_t addMesh();
 

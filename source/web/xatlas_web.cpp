@@ -27,7 +27,7 @@ void createAtlas() {
     xatlas::SetProgressCallback(atlas, ProgressCallback, nullptr);
 }
 
-MeshBufferInfo createMesh(uint32_t vertexCount, uint32_t indexCount, bool normals, bool uvs) {
+MeshBufferInfo createMesh(uint32_t vertexCount, uint32_t indexCount, bool normals, bool uvs, xatlas::IndexFormat indexFormat) {
     MeshBufferInfo meshBufferInfo;
     meshBufferInfo.meshId = nextMeshId++;
 
@@ -35,8 +35,12 @@ MeshBufferInfo createMesh(uint32_t vertexCount, uint32_t indexCount, bool normal
     meshDecl->vertexCount = vertexCount;
     meshDecl->indexCount = indexCount;
 
-    meshDecl->indexData = new uint16_t[indexCount];
-    meshDecl->indexFormat = xatlas::IndexFormat::UInt16;
+    meshDecl->indexFormat = indexFormat;
+    if(indexFormat == xatlas::IndexFormat::UInt16)
+        meshDecl->indexData = new uint16_t[indexCount];
+    else
+        meshDecl->indexData = new uint32_t[indexCount];
+
     meshBufferInfo.indexOffset = (uint32_t) meshDecl->indexData;
 
     meshDecl->vertexPositionData = new float[vertexCount * 3];
@@ -58,7 +62,7 @@ MeshBufferInfo createMesh(uint32_t vertexCount, uint32_t indexCount, bool normal
     return meshBufferInfo;
 }
 
-UvMeshBufferInfo createUvMesh(int vertexCount, int indexCount) {
+UvMeshBufferInfo createUvMesh(int vertexCount, int indexCount, xatlas::IndexFormat indexFormat) {
     UvMeshBufferInfo uvMeshBufferInfo;
     uvMeshBufferInfo.meshId = nextMeshId++;
 
@@ -66,8 +70,11 @@ UvMeshBufferInfo createUvMesh(int vertexCount, int indexCount) {
     uvMeshDecl->vertexCount = vertexCount;
     uvMeshDecl->indexCount = indexCount;
 
-    uvMeshDecl->indexData = new uint16_t[indexCount];
-    uvMeshDecl->indexFormat = xatlas::IndexFormat::UInt16;
+    meshDecl->indexFormat = indexFormat;
+    if(indexFormat == xatlas::IndexFormat::UInt16)
+        meshDecl->indexData = new uint16_t[indexCount];
+    else
+        meshDecl->indexData = new uint32_t[indexCount];
     uvMeshBufferInfo.indexOffset = (uint32_t) uvMeshDecl->indexData;
 
     uvMeshDecl->vertexUvData = new float[vertexCount * 2];
@@ -83,7 +90,10 @@ uint32_t addMesh() {
     delete[] (float *) meshDecl->vertexUvData;
     delete[] (float *) meshDecl->vertexNormalData;
     delete[] (float *) meshDecl->vertexPositionData;
-    delete[] (uint16_t *) meshDecl->indexData;
+    if(meshDecl->indexFormat == xatlas::IndexFormat::UInt16)
+        delete[] (uint16_t *) meshDecl->indexData;
+    else
+        delete[] (uint32_t *) meshDecl->indexData;
     delete meshDecl;
     meshDecl = nullptr;
     return mesh;
@@ -93,7 +103,10 @@ uint32_t addUvMesh() {
     if (uvMeshDecl == nullptr) return 5;
     uint32_t mesh = (uint32_t) xatlas::AddUvMesh(atlas, *uvMeshDecl);
     delete[] (float *) uvMeshDecl->vertexUvData;
-    delete[] (uint16_t *) uvMeshDecl->indexData;
+    if(meshDecl->indexFormat == xatlas::IndexFormat::UInt16)
+        delete[] (uint16_t *) uvMeshDecl->indexData;
+    else
+        delete[] (uint32_t *) uvMeshDecl->indexData;
     delete uvMeshDecl;
     uvMeshDecl = nullptr;
     return mesh;
@@ -122,6 +135,7 @@ AtlasMeshBufferInfo getMeshData(uint32_t meshId) {
     const xatlas::Mesh &mesh = atlas->meshes[meshId];
 
     uint32_t *originalIndexArray = new uint32_t[mesh.vertexCount];
+    uint32_t *atlasIndexArray = new uint32_t[mesh.vertexCount];
     float *uvArray = new float[mesh.vertexCount * 2];
 
     for (uint32_t i = 0; i < mesh.vertexCount; i++) {
@@ -129,6 +143,7 @@ AtlasMeshBufferInfo getMeshData(uint32_t meshId) {
         originalIndexArray[i] = vertex.xref;
         uvArray[i * 2] = vertex.uv[0] / atlas->width;
         uvArray[i * 2 + 1] = vertex.uv[1] / atlas->height;
+        atlasIndexArray[i] = vertex.atlasIndex;
     }
 
     AtlasMeshBufferInfo atlasMeshBufferInfo;
@@ -138,12 +153,13 @@ AtlasMeshBufferInfo getMeshData(uint32_t meshId) {
     atlasMeshBufferInfo.indexOffset = (uint32_t) mesh.indexArray;
     atlasMeshBufferInfo.originalIndexOffset = (uint32_t) originalIndexArray;
     atlasMeshBufferInfo.uvOffset = (uint32_t) uvArray;
-
+    atlasMeshBufferInfo.atlasIndexOffset = 0;
     return atlasMeshBufferInfo;
 }
 
 void destroyMeshData(const AtlasMeshBufferInfo atlasMeshBufferInfo) {
     delete[] (uint32_t *) atlasMeshBufferInfo.originalIndexOffset;
+    delete[] (uint32_t *) atlasMeshBufferInfo.atlasIndexOffset;
     delete[] (float *) atlasMeshBufferInfo.uvOffset;
 }
 
@@ -176,6 +192,7 @@ EMSCRIPTEN_BINDINGS(xatlas) {
         .field("newIndexCount", &AtlasMeshBufferInfo::newIndexCount)
         .field("indexOffset", &AtlasMeshBufferInfo::indexOffset)
         .field("originalIndexOffset", &AtlasMeshBufferInfo::originalIndexOffset)
+        .field("atlasIndexOffset", &AtlasMeshBufferInfo::atlasIndexOffset)
         .field("uvOffset", &AtlasMeshBufferInfo::uvOffset);
 
         emscripten::value_object<xatlas::ChartOptions>("ChartOptions")

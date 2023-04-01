@@ -33,9 +33,9 @@ mkdir -p source/web/build -Force
   ./source/xatlas/xatlas.cpp `
   -s ASSERTIONS=1 `
   -DNDEBUG `
-  -gsource-map `
+  # -gsource-map `
   #    -s TOTAL_MEMORY=278mb `
-  #    -D SANITIZE_ADDRESS_CHECK `
+#    -D SANITIZE_ADDRESS_CHECK `
 #    -fsanitize=address `
 #    -g3 `
 #    Uncomment above line for leak checking
