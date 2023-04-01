@@ -1,4 +1,4 @@
-import createXAtlasModule from "./build/xatlas_web.js"
+import createXAtlasModule from "./build/xatlas.js"
 import { expose } from "comlink";
 
 let _onLoad = ()=>{} //  we cannot put it in the object, otherwise we cannot access it from the outside
